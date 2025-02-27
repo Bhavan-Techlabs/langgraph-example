@@ -1,5 +1,5 @@
 {
-  "agent_name": "my_agent",
+  "agent_name": "my_agent_2",
   "tools": [
     {
       "name": "Calculator",

@@ -155,8 +155,8 @@ def generate_response(state: AgentState) -> Tuple[AgentState, Dict[str, Any]]:
 def generate_agent_file(agent_name):
     agent_code = f"""from typing import Dict, Any, Tuple
 from langgraph.graph import StateGraph, END
-from .utils.state import AgentState
-from .utils.nodes import run_agent, process_tools, generate_response
+from {agent_name}.utils.state import AgentState
+from {agent_name}.utils.nodes import run_agent, process_tools, generate_response
 
 def create_agent_graph():
     \"\"\"Create the {agent_name} agent graph.\"\"\"

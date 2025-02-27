@@ -18,4 +18,20 @@ def calculate_math(expression: str):
     return results
 
 
+@tool
+def get_weather_forecast(city: str):
+    "Call to get a weather forecast for a given city"
+    print("Getting weather forecast for:", city)
+    forecast = f"The weather in {city} is sunny with a high of 25°C."
+    return forecast
+
+
+@tool
+def translate_text(text: str):
+    "Call to translate text from English to Spanish"
+    print("Translating text:", text)
+    translation = "El texto traducido es: ¡Hola, mundo!"
+    return translation
+
+
 tools = [search_web, calculate_math]
