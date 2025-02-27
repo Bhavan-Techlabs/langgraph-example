@@ -2,3 +2,5 @@
 .ipynb_checkpoints
 .langgraph-data
 venv
+
+code_gen/example

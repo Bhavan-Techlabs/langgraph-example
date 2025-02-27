@@ -5,219 +5,309 @@ https://langchain-ai.github.io/langgraph/concepts/application_structure/
 
 import os
 import json
+import argparse
 from pathlib import Path
-import shutil
 
-class LangGraphProjectGenerator:
-    def __init__(self, config_file: str):
-        """Initialize the project generator with a configuration file."""
-        with open(config_file, 'r') as f:
-            self.config = json.load(f)
-        self.agent_name = self.config.get('agent_name', 'my_agent')
-        self.root_dir = Path(self.agent_name + '-app')
 
-    def create_directory_structure(self):
-        """Create the basic directory structure for the project."""
-        # Create main project directory
-        self.root_dir.mkdir(exist_ok=True)
-        
-        # Create agent directory
-        agent_dir = self.root_dir / self.agent_name
-        agent_dir.mkdir(exist_ok=True)
-        
-        # Create utils directory
-        utils_dir = agent_dir / 'utils'
-        utils_dir.mkdir(exist_ok=True)
-        
-        # Create empty __init__.py files
-        (agent_dir / '__init__.py').touch()
-        (utils_dir / '__init__.py').touch()
+def generate_init_file():
+    return "# This file makes the directory a Python package\n"
 
-    def generate_tools_file(self):
-        """Generate the tools.py file with tool definitions."""
-        tools_content = """from typing import Any, Dict
+
+def generate_tools_file(tools):
+    tools_code = """from typing import List, Dict, Any, Optional
 from langchain.tools import BaseTool
 
-{tool_classes}
-
-def get_tools() -> list[BaseTool]:
-    \"\"\"Returns a list of tools available to the agent.\"\"\"
-    return [{tool_instances}]
 """
-        tool_classes = []
-        tool_instances = []
-        
-        for tool in self.config.get('tools', []):
-            tool_name = tool['name']
-            tool_description = tool.get('description', '')
-            
-            tool_class = f"""
-class {tool_name}Tool(BaseTool):
+    for tool in tools:
+        tool_name = tool.get("name", "GenericTool")
+        tool_description = tool.get("description", "A generic tool")
+        tool_args = tool.get("args", [])
+
+        args_str = ""
+        for arg in tool_args:
+            arg_name = arg.get("name", "arg")
+            arg_type = arg.get("type", "str")
+            arg_description = arg.get("description", "An argument")
+            args_str += f'        "{arg_name}": {{"type": "{arg_type}", "description": "{arg_description}"}},\n'
+
+        tools_code += f"""class {tool_name}Tool(BaseTool):
     name = "{tool_name.lower()}"
     description = "{tool_description}"
     
-    def _run(self, input_data: str) -> str:
-        # TODO: Implement tool logic
-        pass
+    def _run(self, {', '.join([arg.get("name", "arg") for arg in tool_args])}):
+        \"\"\"Use the {tool_name} tool.\"\"\"
+        # TODO: Implement the tool functionality
+        return f"Using {tool_name} with {', '.join([arg.get("name", 'arg') + '=' + arg.get('name', 'arg') for arg in tool_args])}"
     
-    async def _arun(self, input_data: str) -> str:
-        # TODO: Implement async tool logic
-        raise NotImplementedError("Async not implemented")
+    def args_schema(self):
+        return {{
+{args_str}        }}
+
 """
-            tool_classes.append(tool_class)
-            tool_instances.append(f"{tool_name}Tool()")
-        
-        tools_content = tools_content.format(
-            tool_classes="\n".join(tool_classes),
-            tool_instances=", ".join(tool_instances)
-        )
-        
-        with open(self.root_dir / self.agent_name / 'utils' / 'tools.py', 'w') as f:
-            f.write(tools_content)
 
-    def generate_state_file(self):
-        """Generate the state.py file with state definitions."""
-        state_content = """from typing import TypedDict, List, Optional
-from langchain.schema import BaseMessage
-
-class AgentState(TypedDict):
-    messages: List[BaseMessage]
-    current_step: str
-    next_step: Optional[str]
-    task_status: str
+    tools_code += """def get_tools() -> List[BaseTool]:
+    \"\"\"Get all tools for the agent.\"\"\"
+    return [
 """
-        with open(self.root_dir / self.agent_name / 'utils' / 'state.py', 'w') as f:
-            f.write(state_content)
 
-    def generate_nodes_file(self):
-        """Generate the nodes.py file with node functions."""
-        nodes_content = """from typing import Annotated, Sequence, TypeVar
-from langgraph.graph import StateGraph
-from .state import AgentState
+    for tool in tools:
+        tool_name = tool.get("name", "GenericTool")
+        tools_code += f"        {tool_name}Tool(),\n"
 
-def process_task(state: AgentState) -> AgentState:
-    \"\"\"Process the current task.\"\"\"
-    # TODO: Implement task processing logic
+    tools_code += """    ]
+"""
+
+    return tools_code
+
+
+def generate_state_file():
+    state_code = """from typing import List, Dict, Any, Optional
+from langchain_core.messages import BaseMessage
+from pydantic import BaseModel, Field
+
+class AgentState(BaseModel):
+    \"\"\"State for the agent.\"\"\"
+    messages: List[BaseMessage] = Field(default_factory=list)
+    next_steps: List[str] = Field(default_factory=list)
+    current_step: Optional[str] = None
+    intermediate_steps: List[Dict[str, Any]] = Field(default_factory=list)
+    tool_results: Dict[str, Any] = Field(default_factory=dict)
+"""
+
+    return state_code
+
+
+def generate_nodes_file(agent_name, agent_prompt):
+    nodes_code = f"""from typing import List, Dict, Any, Tuple, Optional
+from langchain_core.messages import HumanMessage, AIMessage, BaseMessage
+from langchain_openai import ChatOpenAI
+from langchain.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import JsonOutputParser
+
+from ..utils.state import AgentState
+from ..utils.tools import get_tools
+
+# Initialize the language model
+model = ChatOpenAI(model="gpt-4-turbo")
+
+# Define the agent prompt
+AGENT_PROMPT = \"\"\"{agent_prompt}\"\"\"
+
+def agent_prompt_template():
+    return ChatPromptTemplate.from_messages([
+        ("system", AGENT_PROMPT),
+        ("human", "{{input}}"),
+    ])
+
+def get_conversation_history(state: AgentState) -> str:
+    \"\"\"Get the conversation history as a string.\"\"\"
+    messages = []
+    for message in state.messages:
+        if isinstance(message, HumanMessage):
+            messages.append(f"Human: {{message.content}}")
+        elif isinstance(message, AIMessage):
+            messages.append(f"{agent_name}: {{message.content}}")
+    return "\\n".join(messages)
+
+def run_agent(state: AgentState, input: str) -> AgentState:
+    \"\"\"Run the agent to process the input.\"\"\"
+    human_message = HumanMessage(content=input)
+    state.messages.append(human_message)
+    
+    # Create the prompt with conversation history
+    prompt = agent_prompt_template()
+    prompt_input = {{
+        "input": input,
+        "conversation_history": get_conversation_history(state),
+        "tools": [t.name + ": " + t.description for t in get_tools()]
+    }}
+    
+    # Run the agent
+    response = model.invoke(prompt.format(**prompt_input))
+    state.messages.append(response)
+    
     return state
 
-def decide_next_step(state: AgentState) -> str:
-    \"\"\"Decide the next step in the workflow.\"\"\"
-    # TODO: Implement decision logic
-    return "end"
-"""
-        with open(self.root_dir / self.agent_name / 'utils' / 'nodes.py', 'w') as f:
-            f.write(nodes_content)
+def process_tools(state: AgentState) -> AgentState:
+    \"\"\"Process any tool calls from the agent.\"\"\"
+    # TODO: Implement tool processing logic
+    # This would parse the agent's response for tool calls
+    # and execute the appropriate tools
+    
+    return state
 
-    def generate_agent_file(self):
-        """Generate the main agent.py file."""
-        agent_content = f"""from typing import Dict, Any
-from langgraph.graph import StateGraph
-from langchain.chat_models import ChatOpenAI
+def generate_response(state: AgentState) -> Tuple[AgentState, Dict[str, Any]]:
+    \"\"\"Generate the final response to return to the user.\"\"\"
+    # Get the most recent AI message
+    most_recent_message = next((m for m in reversed(state.messages) if isinstance(m, AIMessage)), None)
+    
+    if most_recent_message:
+        response = most_recent_message.content
+    else:
+        response = "I'm not sure how to respond."
+    
+    return state, {{"response": response}}
+"""
+
+    return nodes_code
+
+
+def generate_agent_file(agent_name):
+    agent_code = f"""from typing import Dict, Any, Tuple
+from langgraph.graph import StateGraph, END
 from .utils.state import AgentState
-from .utils.tools import get_tools
-from .utils.nodes import process_task, decide_next_step
+from .utils.nodes import run_agent, process_tools, generate_response
 
-class {self.agent_name.title()}Agent:
-    def __init__(self, model_name: str = "gpt-3.5-turbo"):
-        self.llm = ChatOpenAI(model_name=model_name)
-        self.tools = get_tools()
-        self.workflow = self._create_workflow()
+def create_agent_graph():
+    \"\"\"Create the {agent_name} agent graph.\"\"\"
+    # Initialize the graph
+    graph = StateGraph(AgentState)
+    
+    # Define nodes
+    graph.add_node("run_agent", run_agent)
+    graph.add_node("process_tools", process_tools)
+    graph.add_node("generate_response", generate_response)
+    
+    # Define edges
+    graph.add_edge("run_agent", "process_tools")
+    graph.add_edge("process_tools", "generate_response")
+    graph.add_edge("generate_response", END)
+    
+    # Compile the graph
+    return graph.compile()
 
-    def _create_workflow(self) -> StateGraph:
-        \"\"\"Create the agent workflow graph.\"\"\"
-        workflow = StateGraph(AgentState)
-        
-        # Add nodes to the graph
-        workflow.add_node("process", process_task)
-        
-        # Add conditional edges
-        workflow.add_conditional_edges(
-            "process",
-            decide_next_step,
-            {
-                "continue": "process",
-                "end": None
-            }
-        )
-        
-        workflow.set_entry_point("process")
-        return workflow.compile()
+def get_agent():
+    \"\"\"Get the {agent_name} agent.\"\"\"
+    return create_agent_graph()
 
-    def run(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
-        \"\"\"Run the agent workflow with the given input.\"\"\"
-        initial_state = {
-            "messages": [],
-            "current_step": "start",
-            "next_step": None,
-            "task_status": "in_progress"
+def run_agent(input_text: str, state: Dict[str, Any] = None) -> Dict[str, Any]:
+    \"\"\"Run the {agent_name} agent with the given input.\"\"\"
+    agent = get_agent()
+    
+    # Initialize state if not provided
+    if state is None:
+        state = AgentState().dict()
+    
+    # Run the agent
+    result = agent.invoke({{
+        "messages": state.get("messages", []),
+        "input": input_text,
+    }})
+    
+    return result
+"""
+
+    return agent_code
+
+
+def generate_requirements_file():
+    return """langchain>=0.1.0
+langgraph>=0.0.15
+langchain-openai>=0.0.5
+pydantic>=2.0.0
+python-dotenv>=1.0.0
+"""
+
+
+def generate_env_file():
+    return """# Add your API keys and environment variables here
+OPENAI_API_KEY=your-openai-api-key
+"""
+
+
+def generate_langgraph_json(agent_name):
+    config = {
+        "dependencies": [f"./{agent_name}"],
+        "graphs": {"agent": f"./{agent_name}/agent.py:graph"},
+        "env": ".env",
+    }
+
+    return json.dumps(config, indent=2)
+
+
+def create_project_structure(agent_config, output_dir="."):
+    """Create the project structure based on the agent config."""
+    agent_name = agent_config.get("name", "my_agent")
+    sanitized_name = agent_name.replace(" ", "_").lower()
+    agent_prompt = agent_config.get("prompt", "You are a helpful assistant.")
+    tools = agent_config.get("tools", [])
+
+    # Create the base directory
+    base_dir = Path(output_dir)
+    base_dir.mkdir(exist_ok=True)
+
+    # Create the agent directory
+    agent_dir = base_dir / sanitized_name
+    agent_dir.mkdir(exist_ok=True)
+
+    # Create the utils directory
+    utils_dir = agent_dir / "utils"
+    utils_dir.mkdir(exist_ok=True)
+
+    # Create files
+    (agent_dir / "__init__.py").write_text(generate_init_file())
+    (agent_dir / "agent.py").write_text(generate_agent_file(sanitized_name))
+
+    (utils_dir / "__init__.py").write_text(generate_init_file())
+    (utils_dir / "tools.py").write_text(generate_tools_file(tools))
+    (utils_dir / "state.py").write_text(generate_state_file())
+    (utils_dir / "nodes.py").write_text(generate_nodes_file(agent_name, agent_prompt))
+
+    (base_dir / ".env").write_text(generate_env_file())
+    (base_dir / "requirements.txt").write_text(generate_requirements_file())
+    (base_dir / "langgraph.json").write_text(generate_langgraph_json(sanitized_name))
+
+    return sanitized_name
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Generate a LangGraph agent project")
+    parser.add_argument("--config", type=str, help="Path to the agent config JSON file")
+    parser.add_argument(
+        "--output", type=str, default="./example", help="Output directory"
+    )
+
+    args = parser.parse_args()
+
+    # Load config
+    if args.config:
+        with open(args.config, "r") as f:
+            agent_config = json.load(f)
+    else:
+        # Example config
+        agent_config = {
+            "name": "my_agent",
+            "prompt": "You are a helpful assistant. You have access to several tools to help the user.",
+            "tools": [
+                {
+                    "name": "Calculator",
+                    "description": "Perform basic mathematical operations",
+                    "args": [
+                        {
+                            "name": "expression",
+                            "type": "str",
+                            "description": "The mathematical expression to evaluate",
+                        }
+                    ],
+                },
+                {
+                    "name": "WeatherCheck",
+                    "description": "Get the current weather for a location",
+                    "args": [
+                        {
+                            "name": "location",
+                            "type": "str",
+                            "description": "The location to check weather for",
+                        }
+                    ],
+                },
+            ],
         }
-        
-        result = self.workflow.invoke(initial_state)
-        return result
-"""
-        with open(self.root_dir / self.agent_name / 'agent.py', 'w') as f:
-            f.write(agent_content)
 
-    def generate_requirements_file(self):
-        """Generate the requirements.txt file."""
-        requirements = """langchain>=0.1.0
-langgraph>=0.0.10
-openai>=1.0.0
-python-dotenv>=0.19.0
-"""
-        with open(self.root_dir / 'requirements.txt', 'w') as f:
-            f.write(requirements)
+    # Create the project
+    agent_name = create_project_structure(agent_config, args.output)
+    print(f"Generated LangGraph agent project for '{agent_name}' in {args.output}")
 
-    def generate_env_file(self):
-        """Generate the .env file."""
-        env_content = """# OpenAI API Key
-OPENAI_API_KEY=your-api-key-here
-
-# Other configuration variables
-MODEL_NAME=gpt-3.5-turbo
-"""
-        with open(self.root_dir / '.env', 'w') as f:
-            f.write(env_content)
-
-    def generate_config_file(self):
-        """Generate the langgraph.json file."""
-        config_content = json.dumps(self.config, indent=2)
-        with open(self.root_dir / 'langgraph.json', 'w') as f:
-            f.write(config_content)
-
-    def generate_project(self):
-        """Generate the complete project structure."""
-        self.create_directory_structure()
-        self.generate_tools_file()
-        self.generate_state_file()
-        self.generate_nodes_file()
-        self.generate_agent_file()
-        self.generate_requirements_file()
-        self.generate_env_file()
-        self.generate_config_file()
-        
-        print(f"Project generated successfully at: {self.root_dir}")
 
 if __name__ == "__main__":
-    # Example usage
-    example_config = {
-        "agent_name": "my_agent",
-        "tools": [
-            {
-                "name": "Calculator",
-                "description": "Performs basic mathematical calculations"
-            },
-            {
-                "name": "WebSearch",
-                "description": "Searches the web for information"
-            }
-        ]
-    }
-    
-    # Save example config to file
-    with open('example_langgraph.json', 'w') as f:
-        json.dump(example_config, indent=2, fp=f)
-    
-    # Generate project from config
-    generator = LangGraphProjectGenerator('example_langgraph.json')
-    generator.generate_project()
+    main()
