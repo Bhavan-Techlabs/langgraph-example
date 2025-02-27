@@ -19,6 +19,10 @@ brew install langgraph-cli
 langgraph build -t my-image
 docker compose up
 
+Once the API is running, interact with that using
+
+https://langchain-ai.github.io/langgraph/cloud/reference/api/api_ref.html#tag/assistants
+
 ## Links
 
 To self host: https://langchain-ai.github.io/langgraph/how-tos/deploy-self-hosted/
