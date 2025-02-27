@@ -54,10 +54,9 @@ def run(assistant_id, thread_id, text):
 
 
 def main():
-    first_run = False # Set to True to create a new assistant
-    assistant_id = "1b8bb229-15eb-4d64-a52e-38ca1ac54da4"
-    thread_id = "362bae49-3bf9-4ee6-bae4-830c54f52e85"
-    message = "Hello"
+    first_run = False  # Set to True to create a new assistant
+    assistant_id = "3cafb1d5-a1c9-43c2-8cac-3474c8dd9744"
+    thread_id = "285485b2-852f-4976-bb40-a594f806e33f"
 
     if first_run:
         assistant_id = str(uuid.uuid4())
@@ -67,10 +66,22 @@ def main():
         create_assistant(assistant_id, assistant_name, graph_name)
         create_thread(thread_id)
 
-    result = run(assistant_id, thread_id, message)
-    messages = result.json()["messages"]
-    for message in messages:
-        print(f"{message['type']}: {message['content']}")
+    print("CLI Chat Application. Type 'exit' to quit.")
+    while True:
+        user_input = input("You: ")
+        if user_input.lower() == "exit":
+            print("Exiting chat...")
+            break
+
+        if user_input.lower() == "history":
+            for message in messages:
+                print(f"{message['type'].capitalize()}: {message['content']}")
+            break
+
+        result = run(assistant_id, thread_id, user_input)
+        messages = result.json()["messages"]
+        last_message = messages[-1]
+        print(f"Assistant: {last_message['content']}")
 
 
 if __name__ == "__main__":
