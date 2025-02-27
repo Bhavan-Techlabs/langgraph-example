@@ -30,3 +30,5 @@ To self host: https://langchain-ai.github.io/langgraph/how-tos/deploy-self-hoste
 Structure of the application: https://langchain-ai.github.io/langgraph/concepts/application_structure/
 
 Local server setup: https://langchain-ai.github.io/langgraph/tutorials/langgraph-platform/local-server/#developer-references
+
+Hot reloading: https://langchain-ai.github.io/langgraph/concepts/langgraph_cli/#dev

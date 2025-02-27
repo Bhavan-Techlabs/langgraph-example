@@ -14,7 +14,7 @@ def search_web(query: str):
 def calculate_math(expression: str):
     "Call to calculate math with any expression"
     print("Calculating math for:", expression)
-    results = "This is a test of calculate_math"
+    results = "The calculated answer is 42"
     return results
 
 
