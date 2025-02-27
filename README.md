@@ -13,9 +13,14 @@ LangGraph shortens the time-to-market for developers using LangGraph, with a one
 
 In order to deploy this agent to LangGraph Cloud you will want to first fork this repo. After that, you can follow the instructions [here](https://langchain-ai.github.io/langgraph/cloud/) to deploy to LangGraph Cloud.
 
-## Getting Started
+## Setup
 
-python3 -m pip install -U langgraph-cli
-python3 -m langgraph build -t my-image
-
+brew install langgraph-cli
+langgraph build -t my-image
 docker compose up
+
+## Links
+
+To self host: https://langchain-ai.github.io/langgraph/how-tos/deploy-self-hosted/
+
+Structure of the application: https://langchain-ai.github.io/langgraph/concepts/application_structure/
