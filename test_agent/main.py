@@ -54,17 +54,22 @@ def run(assistant_id, thread_id, text):
 
 
 def main():
-    assistant_id = str(uuid.uuid4())
-    thread_id = str(uuid.uuid4())
-    assistant_name = "first-assistant"
-    graph_name = "agent"
-    create_assistant(assistant_id, assistant_name, graph_name)
-    create_thread(thread_id)
+    first_run = True
+    assistant_id = ""
+    thread_id = ""
+
+    if first_run:
+        assistant_id = str(uuid.uuid4())
+        thread_id = str(uuid.uuid4())
+        assistant_name = f"assistant-{assistant_id}"
+        graph_name = "agent"
+        create_assistant(assistant_id, assistant_name, graph_name)
+        create_thread(thread_id)
+
     result = run(assistant_id, thread_id, "Hi")
     messages = result.json()["messages"]
     for message in messages:
         print(f"{message['type']}: {message['content']}")
-    # get_graph(assistant_id)
 
 
 if __name__ == "__main__":
