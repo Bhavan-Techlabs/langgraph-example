@@ -2,7 +2,8 @@ import uuid
 
 import requests
 
-base_url = "http://0.0.0.0:8123"
+base_url = "http://127.0.0.1:2024"  # for dev
+# base_url = "http://0.0.0.0:8123"
 
 
 def create_assistant(assistant_id, assistant_name, graph_name):
@@ -54,7 +55,7 @@ def run(assistant_id, thread_id, text):
 
 
 def main():
-    first_run = False  # Set to True to create a new assistant
+    first_run = True  # Set to True to create a new assistant
     assistant_id = "3cafb1d5-a1c9-43c2-8cac-3474c8dd9744"
     thread_id = "285485b2-852f-4976-bb40-a594f806e33f"
 
