@@ -54,9 +54,10 @@ def run(assistant_id, thread_id, text):
 
 
 def main():
-    first_run = True
-    assistant_id = ""
-    thread_id = ""
+    first_run = False # Set to True to create a new assistant
+    assistant_id = "1b8bb229-15eb-4d64-a52e-38ca1ac54da4"
+    thread_id = "362bae49-3bf9-4ee6-bae4-830c54f52e85"
+    message = "Hello"
 
     if first_run:
         assistant_id = str(uuid.uuid4())
@@ -66,7 +67,7 @@ def main():
         create_assistant(assistant_id, assistant_name, graph_name)
         create_thread(thread_id)
 
-    result = run(assistant_id, thread_id, "Hi")
+    result = run(assistant_id, thread_id, message)
     messages = result.json()["messages"]
     for message in messages:
         print(f"{message['type']}: {message['content']}")
