@@ -276,7 +276,7 @@ def main():
     else:
         # Example config
         agent_config = {
-            "name": "my_agent",
+            "name": "my_agent_2",
             "prompt": "You are a helpful assistant. You have access to several tools to help the user.",
             "tools": [
                 {
