@@ -68,7 +68,7 @@ def main():
 
     print("CLI Chat Application. Type 'exit' to quit.")
     while True:
-        user_input = input("You: ")
+        user_input = input("\nYou: ")
         if user_input.lower() == "exit":
             print("Exiting chat...")
             break
@@ -81,7 +81,7 @@ def main():
         result = run(assistant_id, thread_id, user_input)
         messages = result.json()["messages"]
         last_message = messages[-1]
-        print(f"Assistant: {last_message['content']}")
+        print(f"\nAssistant: {last_message['content']}")
 
 
 if __name__ == "__main__":
