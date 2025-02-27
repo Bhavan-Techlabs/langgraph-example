@@ -1,0 +1,13 @@
+{
+  "agent_name": "my_agent",
+  "tools": [
+    {
+      "name": "Calculator",
+      "description": "Performs basic mathematical calculations"
+    },
+    {
+      "name": "WebSearch",
+      "description": "Searches the web for information"
+    }
+  ]
+}
