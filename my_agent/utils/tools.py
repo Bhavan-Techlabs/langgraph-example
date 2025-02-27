@@ -6,7 +6,7 @@ from langchain_core.tools import tool
 def search_web(query: str):
     "Call to search the web with any query"
     print("Searching the web for:", query)
-    results = "This is a test of search_web"
+    results = "Agents are the future of programming!"
     return results
 
 
@@ -14,7 +14,7 @@ def search_web(query: str):
 def calculate_math(expression: str):
     "Call to calculate math with any expression"
     print("Calculating math for:", expression)
-    results = "The calculated answer is 42"
+    results = "The calculated answer is infinity!"
     return results
 
 
