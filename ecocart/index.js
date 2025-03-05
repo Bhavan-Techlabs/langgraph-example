@@ -39,8 +39,8 @@ db.serialize(() => {
 });
 
 // Endpoint to assign sales lead
-app.get('/assign-lead', (req, res) => {
-    const { lead_id } = req.body;
+app.get('/assign-lead/:lead_id', (req, res) => {
+    const { lead_id } = req.params;
 
     if (!lead_id) {
         return res.status(400).json({ error: 'Lead ID is required' });
