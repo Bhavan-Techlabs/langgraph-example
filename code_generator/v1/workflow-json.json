@@ -1,0 +1,281 @@
+{
+  "workflowId": "workflow-001",
+  "name": "Customer Support Automation",
+  "description": "Workflow for handling customer inquiries with multiple specialized agents",
+  "version": "1.0",
+  "realmId": "realm-01",
+  "isActive": true,
+  "createdBy": "user-001",
+  "createdAt": "2025-02-28T14:30:00Z",
+  "updatedBy": null,
+  "updatedAt": null,
+  
+  "nodes": [
+    {
+      "id": "node-001",
+      "name": "Dispatcher",
+      "type": "agent",
+      "position": { "x": 100, "y": 200 },
+      "config": {
+        "agentId": "agent-001",
+        "llmConfig": {
+          "llmId": "llm-001",
+          "name": "GPT-4",
+          "provider": "OpenAI",
+          "parameters": {
+            "temperature": 0.2,
+            "max_tokens": 1024
+          }
+        },
+        "promptTemplateConfig": {
+          "promptTemplateId": "pt-002",
+          "variables": {
+            "instruction": "You are a dispatcher agent. Your job is to analyze customer inquiries and route them to the appropriate specialized agent based on the nature of the request: Technical Support, Billing, or General Information."
+          }
+        }
+      }
+    },
+    {
+      "id": "node-002",
+      "name": "Technical Support Agent",
+      "type": "agent",
+      "position": { "x": 300, "y": 100 },
+      "config": {
+        "agentId": "agent-002",
+        "llmConfig": {
+          "llmId": "llm-001",
+          "name": "GPT-4",
+          "provider": "OpenAI",
+          "parameters": {
+            "temperature": 0.3,
+            "max_tokens": 2048
+          }
+        },
+        "promptTemplateConfig": {
+          "promptTemplateId": "pt-003",
+          "variables": {
+            "instruction": "You are a technical support specialist. Help customers troubleshoot and resolve technical issues with our products."
+          }
+        },
+        "tools": ["tool-001", "tool-003"]
+      }
+    },
+    {
+      "id": "node-003",
+      "name": "Billing Agent",
+      "type": "agent",
+      "position": { "x": 300, "y": 200 },
+      "config": {
+        "agentId": "agent-003",
+        "llmConfig": {
+          "llmId": "llm-001",
+          "name": "GPT-4",
+          "provider": "OpenAI",
+          "parameters": {
+            "temperature": 0.1,
+            "max_tokens": 1024
+          }
+        },
+        "promptTemplateConfig": {
+          "promptTemplateId": "pt-004",
+          "variables": {
+            "instruction": "You are a billing specialist. Help customers with questions about their account, subscriptions, payments, and refunds."
+          }
+        },
+        "tools": ["tool-002"]
+      }
+    },
+    {
+      "id": "node-004",
+      "name": "General Information Agent",
+      "type": "agent",
+      "position": { "x": 300, "y": 300 },
+      "config": {
+        "agentId": "agent-004",
+        "llmConfig": {
+          "llmId": "llm-002",
+          "name": "Claude-3",
+          "provider": "Anthropic",
+          "parameters": {
+            "temperature": 0.7,
+            "max_tokens": 1500
+          }
+        },
+        "promptTemplateConfig": {
+          "promptTemplateId": "pt-005",
+          "variables": {
+            "instruction": "You are a customer service agent. Provide general information about our products, services, and policies."
+          }
+        }
+      }
+    },
+    {
+      "id": "node-005",
+      "name": "Knowledge Base",
+      "type": "tool",
+      "position": { "x": 500, "y": 100 },
+      "config": {
+        "toolId": "tool-001",
+        "type": "RAG_Retrieval",
+        "parameters": {
+          "numberOfResults": 5,
+          "similarityThreshold": 0.75
+        }
+      }
+    },
+    {
+      "id": "node-006",
+      "name": "Billing API",
+      "type": "tool",
+      "position": { "x": 500, "y": 200 },
+      "config": {
+        "toolId": "tool-002",
+        "type": "API",
+        "parameters": {
+          "timeout": 10,
+          "retries": 2
+        }
+      }
+    },
+    {
+      "id": "node-007",
+      "name": "Ticket Creation",
+      "type": "tool",
+      "position": { "x": 500, "y": 300 },
+      "config": {
+        "toolId": "tool-003",
+        "type": "API",
+        "parameters": {
+          "priority": "medium",
+          "department": "technical"
+        }
+      }
+    },
+    {
+      "id": "node-008",
+      "name": "Response Coordinator",
+      "type": "agent",
+      "position": { "x": 700, "y": 200 },
+      "config": {
+        "agentId": "agent-005",
+        "llmConfig": {
+          "llmId": "llm-003",
+          "name": "GPT-3.5-Turbo",
+          "provider": "OpenAI",
+          "parameters": {
+            "temperature": 0.4,
+            "max_tokens": 1024
+          }
+        },
+        "promptTemplateConfig": {
+          "promptTemplateId": "pt-006",
+          "variables": {
+            "instruction": "You are a response coordinator. Your job is to receive responses from specialized agents, ensure they are complete and helpful, and format them appropriately for the customer."
+          }
+        },
+        "slmConfig": {
+          "slmId": "slm-001",
+          "parameters": {
+            "threshold": 0.8
+          }
+        }
+      }
+    }
+  ],
+  
+  "edges": [
+    {
+      "id": "edge-001",
+      "source": "node-001",
+      "target": "node-002",
+      "label": "Technical Issues",
+      "type": "conditional",
+      "condition": {
+        "field": "category",
+        "operator": "equals",
+        "value": "technical"
+      }
+    },
+    {
+      "id": "edge-002",
+      "source": "node-001",
+      "target": "node-003",
+      "label": "Billing Issues",
+      "type": "conditional",
+      "condition": {
+        "field": "category",
+        "operator": "equals",
+        "value": "billing"
+      }
+    },
+    {
+      "id": "edge-003",
+      "source": "node-001",
+      "target": "node-004",
+      "label": "General Inquiries",
+      "type": "conditional",
+      "condition": {
+        "field": "category",
+        "operator": "equals",
+        "value": "general"
+      }
+    },
+    {
+      "id": "edge-004",
+      "source": "node-002",
+      "target": "node-005",
+      "label": "Query Knowledge Base",
+      "type": "tool_call"
+    },
+    {
+      "id": "edge-005",
+      "source": "node-002",
+      "target": "node-007",
+      "label": "Create Ticket",
+      "type": "tool_call",
+      "condition": {
+        "field": "resolution_status",
+        "operator": "equals",
+        "value": "escalated"
+      }
+    },
+    {
+      "id": "edge-006",
+      "source": "node-003",
+      "target": "node-006",
+      "label": "Query Billing System",
+      "type": "tool_call"
+    },
+    {
+      "id": "edge-007",
+      "source": "node-002",
+      "target": "node-008",
+      "label": "Technical Response",
+      "type": "message"
+    },
+    {
+      "id": "edge-008",
+      "source": "node-003",
+      "target": "node-008",
+      "label": "Billing Response",
+      "type": "message"
+    },
+    {
+      "id": "edge-009",
+      "source": "node-004",
+      "target": "node-008",
+      "label": "General Response",
+      "type": "message"
+    }
+  ],
+  
+  "inputNode": "node-001",
+  "outputNode": "node-008",
+  
+  "metadata": {
+    "executionMode": "sequential",
+    "maxIterations": 5,
+    "timeoutSeconds": 60,
+    "tags": ["customer-support", "multi-agent", "production"]
+  }
+}

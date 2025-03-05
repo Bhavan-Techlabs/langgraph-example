@@ -1,0 +1,25 @@
+multi-agent-platform/
+├── app/
+│   ├── api/
+│   │   ├── __init__.py
+│   │   ├── routes.py         # API endpoints
+│   │   └── models.py         # API data models
+│   ├── core/
+│   │   ├── __init__.py
+│   │   ├── config.py         # Configuration settings
+│   │   ├── parser.py         # JSON workflow parser
+│   │   ├── generator.py      # LangGraph code generator
+│   │   ├── executor.py       # Agent execution engine
+│   │   └── state_manager.py  # Agent state management
+│   ├── utils/
+│   │   ├── __init__.py
+│   │   ├── logger.py         # Logging utilities
+│   │   └── helpers.py        # Helper functions
+│   ├── __init__.py
+│   └── main.py              # FastAPI application entry point
+├── generated/               # Dynamically generated agent applications
+│   └── README.md           # Directory for generated LangGraph code
+├── .env                    # Environment variables
+├── Dockerfile              # Docker configuration
+├── docker-compose.yml      # Container orchestration
+└── requirements.txt        # Dependencies
