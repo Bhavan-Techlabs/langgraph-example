@@ -6,3 +6,4 @@ venv
 code_gen/example
 .langgraph_api
 __pycache__
+node_modules
